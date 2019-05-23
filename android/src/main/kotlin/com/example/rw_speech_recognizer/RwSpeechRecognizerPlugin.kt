@@ -6,33 +6,37 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import android.app.Activity
+import android.app.Application
 import android.content.Intent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.os.Bundle
 
 
-class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChannel) : MethodCallHandler {
+class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChannel) : MethodCallHandler, Application.ActivityLifecycleCallbacks {
     private val ACTION_OVERRIDE_COMMANDS = "com.realwear.wearhf.intent.action.OVERRIDE_COMMANDS"
     private val ACTION_SPEECH_EVENT = "com.realwear.wearhf.intent.action.SPEECH_EVENT"
     private val ACTION_RESTORE_COMMANDS = "com.realwear.wearhf.intent.action.RESTORE_COMMANDS"
     private val EXTRA_SOURCE_PACKAGE = "com.realwear.wearhf.intent.extra.SOURCE_PACKAGE"
     private val EXTRA_COMMANDS = "com.realwear.wearhf.intent.extra.COMMANDS"
     private val EXTRA_RESULT = "command"
+    private var commands: ArrayList<String>? = null
 
-    init {
-        val asrBroadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                val action = intent.action
+    private val asrBroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val action = intent.action
 
-                if (action == ACTION_SPEECH_EVENT) {
-                    val asrCommand = intent.getStringExtra(EXTRA_RESULT)
+            if (action == ACTION_SPEECH_EVENT) {
+                val asrCommand = intent.getStringExtra(EXTRA_RESULT)
 
-                    channel.invokeMethod("onSpeechEvent", mapOf("command" to asrCommand))
-                }
+                channel.invokeMethod("onSpeechEvent", mapOf("command" to asrCommand))
             }
         }
+    }
 
+    init {
+        activity.application.registerActivityLifecycleCallbacks(this)
         activity.registerReceiver(asrBroadcastReceiver, IntentFilter(ACTION_SPEECH_EVENT))
     }
 
@@ -47,7 +51,6 @@ class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChanne
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when {
-            call.method == "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
             call.method == "setCommands" -> {
                 call.argument<ArrayList<String>>("commands")?.let { setCommands(it) }
                 result.success(null)
@@ -60,12 +63,44 @@ class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChanne
         }
     }
 
-    private fun setCommands(commands: ArrayList<String>) {
-        val intent = Intent(ACTION_OVERRIDE_COMMANDS)
+    override fun onActivityPaused(activity: Activity) {
+        activity.unregisterReceiver(asrBroadcastReceiver)
+        restoreCommands()
+    }
 
-        intent.putExtra(EXTRA_SOURCE_PACKAGE, activity.packageName)
-        intent.putExtra(EXTRA_COMMANDS, commands)
-        activity.sendBroadcast(intent)
+    override fun onActivityResumed(activity: Activity) {
+        activity.registerReceiver(asrBroadcastReceiver, IntentFilter(ACTION_SPEECH_EVENT))
+        applyCommands()
+    }
+
+    override fun onActivityCreated(activity: Activity, bundle: Bundle) {
+    }
+
+    override fun onActivityDestroyed(activity: Activity) {
+    }
+
+    override fun onActivityStarted(activity: Activity) {
+    }
+
+    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+    }
+
+    private fun applyCommands() {
+        if (commands != null) {
+            val intent = Intent(ACTION_OVERRIDE_COMMANDS)
+
+            intent.putExtra(EXTRA_SOURCE_PACKAGE, activity.packageName)
+            intent.putExtra(EXTRA_COMMANDS, commands)
+            activity.sendBroadcast(intent)
+        }
+    }
+
+    private fun setCommands(commandsList: ArrayList<String>) {
+        commands = commandsList
+        applyCommands()
     }
 
     private fun restoreCommands() {

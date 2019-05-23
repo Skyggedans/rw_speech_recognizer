@@ -13,12 +13,6 @@ class RwSpeechRecognizer {
           }
         });
 
-  static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
-
-    return version;
-  }
-
   static Future<void> setCommands(
       List<String> commands, Function(String) handler) async {
     _handler = handler;
