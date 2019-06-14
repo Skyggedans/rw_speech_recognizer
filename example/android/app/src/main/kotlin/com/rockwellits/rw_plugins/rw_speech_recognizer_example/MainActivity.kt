@@ -1,4 +1,4 @@
-package com.example.rw_speech_recognizer_example
+package com.rockwellits.rw_plugins.rw_speech_recognizer_example
 
 import android.os.Bundle
 

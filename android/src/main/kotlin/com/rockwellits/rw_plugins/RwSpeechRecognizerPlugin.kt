@@ -1,4 +1,4 @@
-package com.example.rw_speech_recognizer
+package com.rockwellits.rw_plugins
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -43,7 +43,7 @@ class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChanne
     companion object {
         @JvmStatic
         fun registerWith(registrar: Registrar) {
-            val channel = MethodChannel(registrar.messenger(), "com.rockwellits.plugins/rw_speech_recognizer")
+            val channel = MethodChannel(registrar.messenger(), "com.rockwellits.rw_plugins/rw_speech_recognizer")
 
             channel.setMethodCallHandler(RwSpeechRecognizerPlugin(registrar.activity(), channel))
         }
@@ -73,7 +73,7 @@ class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChanne
         applyCommands()
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle) {
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
     }
 
     override fun onActivityDestroyed(activity: Activity) {
@@ -82,7 +82,7 @@ class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChanne
     override fun onActivityStarted(activity: Activity) {
     }
 
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {
+    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle?) {
     }
 
     override fun onActivityStopped(activity: Activity) {

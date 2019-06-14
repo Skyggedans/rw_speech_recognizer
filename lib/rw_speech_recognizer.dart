@@ -6,7 +6,7 @@ class RwSpeechRecognizer {
   static Function(String) _handler;
 
   static MethodChannel _channel =
-      MethodChannel('com.rockwellits.plugins/rw_speech_recognizer')
+      MethodChannel('com.rockwellits.rw_plugins/rw_speech_recognizer')
         ..setMethodCallHandler((call) async {
           if (call.method == 'onSpeechEvent' && _handler != null) {
             _handler(call.arguments['command']);
