@@ -1,4 +1,4 @@
-package com.rockwellits.rw_plugins
+package com.rockwellits.rw_plugins.rw_speech_recognizer
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel

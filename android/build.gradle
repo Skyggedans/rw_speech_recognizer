@@ -1,4 +1,4 @@
-group 'com.rockwellits.rw_plugins'
+group 'com.rockwellits.rw_plugins.rw_speech_recognizer'
 version '1.0-SNAPSHOT'
 
 buildscript {
