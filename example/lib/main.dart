@@ -32,7 +32,8 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('RealWear HMT-1 speech recognition example app'),
+          title: const Text(
+              'RealWear HMT-1 speech recognition plugin example app'),
         ),
         body: Builder(builder: (BuildContext context) {
           if (_speechCommand != null) {

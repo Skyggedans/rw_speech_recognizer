@@ -1,26 +1,26 @@
 package com.rockwellits.rw_plugins.rw_speech_recognizer
 
+import android.app.Activity
+import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Bundle
+import androidx.annotation.NonNull
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import android.app.Activity
-import android.app.Application
-import android.content.Intent
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.IntentFilter
-import android.os.Bundle
 
 
-class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChannel) : MethodCallHandler, Application.ActivityLifecycleCallbacks {
-    private val ACTION_OVERRIDE_COMMANDS = "com.realwear.wearhf.intent.action.OVERRIDE_COMMANDS"
-    private val ACTION_SPEECH_EVENT = "com.realwear.wearhf.intent.action.SPEECH_EVENT"
-    private val ACTION_RESTORE_COMMANDS = "com.realwear.wearhf.intent.action.RESTORE_COMMANDS"
-    private val EXTRA_SOURCE_PACKAGE = "com.realwear.wearhf.intent.extra.SOURCE_PACKAGE"
-    private val EXTRA_COMMANDS = "com.realwear.wearhf.intent.extra.COMMANDS"
-    private val EXTRA_RESULT = "command"
+class RwSpeechRecognizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware, Application.ActivityLifecycleCallbacks {
+    lateinit var activity: Activity
+    lateinit var channel: MethodChannel
     private var commands: ArrayList<String>? = null
 
     private val asrBroadcastReceiver = object : BroadcastReceiver() {
@@ -35,27 +35,42 @@ class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChanne
         }
     }
 
-    init {
-        activity.application.registerActivityLifecycleCallbacks(this)
-        activity.registerReceiver(asrBroadcastReceiver, IntentFilter(ACTION_SPEECH_EVENT))
-    }
-
     companion object {
+        private const val CHANNEL = "com.rockwellits.rw_plugins/rw_speech_recognizer"
+        private const val ACTION_OVERRIDE_COMMANDS = "com.realwear.wearhf.intent.action.OVERRIDE_COMMANDS"
+        private const val ACTION_SPEECH_EVENT = "com.realwear.wearhf.intent.action.SPEECH_EVENT"
+        private const val ACTION_RESTORE_COMMANDS = "com.realwear.wearhf.intent.action.RESTORE_COMMANDS"
+        private const val EXTRA_SOURCE_PACKAGE = "com.realwear.wearhf.intent.extra.SOURCE_PACKAGE"
+        private const val EXTRA_COMMANDS = "com.realwear.wearhf.intent.extra.COMMANDS"
+        private const val EXTRA_RESULT = "command"
+
         @JvmStatic
         fun registerWith(registrar: Registrar) {
-            val channel = MethodChannel(registrar.messenger(), "com.rockwellits.rw_plugins/rw_speech_recognizer")
+            val channel = MethodChannel(registrar.messenger(), CHANNEL)
+            val plugin = RwSpeechRecognizerPlugin()
 
-            channel.setMethodCallHandler(RwSpeechRecognizerPlugin(registrar.activity(), channel))
+            plugin.activity = registrar.activity()
+            plugin.channel = channel
+            plugin.initialize()
+
+            channel.setMethodCallHandler(plugin)
         }
     }
 
+    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        val channel = MethodChannel(flutterPluginBinding.getFlutterEngine().dartExecutor, CHANNEL)
+
+        this.channel = channel
+        channel.setMethodCallHandler(this)
+    }
+
     override fun onMethodCall(call: MethodCall, result: Result) {
-        when {
-            call.method == "setCommands" -> {
+        when (call.method) {
+            "setCommands" -> {
                 call.argument<ArrayList<String>>("commands")?.let { setCommands(it) }
                 result.success(null)
             }
-            call.method == "restoreCommands" -> {
+            "restoreCommands" -> {
                 restoreCommands()
                 result.success(null)
             }
@@ -86,6 +101,30 @@ class RwSpeechRecognizerPlugin(val activity: Activity, val channel: MethodChanne
     }
 
     override fun onActivityStopped(activity: Activity) {
+    }
+
+    override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+    }
+
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        this.activity = binding.activity
+        this.initialize()
+    }
+
+    override fun onDetachedFromActivity() {
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+    }
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+    }
+
+    fun initialize() {
+        assert(::activity.isInitialized)
+
+        activity.application.registerActivityLifecycleCallbacks(this)
+        activity.registerReceiver(asrBroadcastReceiver, IntentFilter(ACTION_SPEECH_EVENT))
     }
 
     private fun applyCommands() {

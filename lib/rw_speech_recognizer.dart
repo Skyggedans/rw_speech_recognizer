@@ -13,12 +13,16 @@ class RwSpeechRecognizer {
           }
         });
 
+  /// Sets recognizable commands.
+  ///
+  /// Sets recognizable [commands] and [handler] which will be called on command detection.
   static Future<void> setCommands(
       List<String> commands, Function(String) handler) async {
     _handler = handler;
     await _channel.invokeMethod('setCommands', {'commands': commands});
   }
 
+  /// Resets commands.
   static Future<void> restoreCommands() async {
     await _channel.invokeMethod('restoreCommands');
   }
